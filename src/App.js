@@ -25,40 +25,106 @@ function formatDateLabel(s) { const [,m,d]=s.split("-"); return `${m}/${d}`; }
 function getDaysInMonth(y,m) { return new Date(y,m+1,0).getDate(); }
 function getFirstDayOfMonth(y,m) { return new Date(y,m,1).getDay(); }
 
-// ─── Login Screen ───────────────────────────────────────────────
-function LoginScreen() {
+// ─── Auth Screen ────────────────────────────────────────────────
+function AuthScreen() {
+  const [mode, setMode] = useState("login"); // login | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const signInWithGoogle = async () => {
+  const handleSubmit = async () => {
+    setError(""); setSuccess("");
+    if (!email || !password) { setError("請填入 Email 和密碼"); return; }
+    if (mode === "signup" && !name) { setError("請填入你的名字"); return; }
+    if (password.length < 6) { setError("密碼至少 6 個字元"); return; }
     setLoading(true);
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin }
-    });
+
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError("Email 或密碼錯誤，請再試一次");
+    } else {
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name: name } }
+      });
+      if (error) setError(error.message);
+      else setSuccess("註冊成功！請查看 Email 確認信，確認後即可登入 📬");
+    }
+    setLoading(false);
+  };
+
+  const inputStyle = {
+    width:"100%", padding:"14px 16px", borderRadius:14,
+    border:"1.5px solid #D4C0A8", background:"#FBF7F2",
+    color:"#3E2A1A", fontSize:15, fontFamily:"'Noto Sans TC',sans-serif",
+    outline:"none", marginBottom:12,
   };
 
   return (
     <div style={{ minHeight:"100vh", background:"#F5EFE6", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", fontFamily:"'Playfair Display','Noto Sans TC',serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');`}</style>
-      <div style={{ fontSize:64, marginBottom:24 }}>🍵</div>
-      <h1 style={{ fontSize:32, fontWeight:900, color:"#3E2A1A", textAlign:"center", lineHeight:1.2, marginBottom:8 }}>運動好習慣</h1>
-      <p style={{ fontSize:15, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:48, textAlign:"center" }}>週打卡紀錄 · 每天一點點</p>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap'); * { box-sizing:border-box; }`}</style>
+      <div style={{ fontSize:56, marginBottom:16 }}>🍵</div>
+      <h1 style={{ fontSize:30, fontWeight:900, color:"#3E2A1A", textAlign:"center", lineHeight:1.2, marginBottom:6, fontFamily:"'Playfair Display',serif" }}>運動好習慣</h1>
+      <p style={{ fontSize:14, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:32, textAlign:"center" }}>週打卡紀錄 · 每天一點點</p>
 
-      <button onClick={signInWithGoogle} disabled={loading} style={{
-        display:"flex", alignItems:"center", gap:12,
-        background:"#fff", border:"1.5px solid #D4C0A8",
-        borderRadius:16, padding:"14px 28px", cursor:"pointer",
-        fontSize:15, fontWeight:600, color:"#3E2A1A",
-        fontFamily:"'Noto Sans TC',sans-serif",
-        boxShadow:"0 4px 18px #8B5E3C18",
-        transition:"all 0.2s",
-      }}>
-        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-        {loading ? "登入中…" : "使用 Google 帳號登入"}
-      </button>
+      <div style={{ width:"100%", maxWidth:360, background:"#EDE0D0", borderRadius:24, padding:"28px 24px", border:"1px solid #D4C0A8", boxShadow:"0 4px 24px #8B5E3C14" }}>
+        {/* Tab */}
+        <div style={{ display:"flex", background:"#D4C0A8", borderRadius:12, padding:3, marginBottom:24, gap:0 }}>
+          {["login","signup"].map((m,i) => (
+            <button key={m} onClick={() => { setMode(m); setError(""); setSuccess(""); }} style={{
+              flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer",
+              background: mode===m ? "#8B5E3C" : "transparent",
+              color: mode===m ? "#F5EFE6" : "#9C7E6A",
+              fontWeight: mode===m ? 700 : 400, fontSize:14,
+              fontFamily:"'Noto Sans TC',sans-serif", transition:"all 0.2s",
+            }}>{i===0 ? "登入" : "註冊"}</button>
+          ))}
+        </div>
 
-      <p style={{ marginTop:32, fontSize:12, color:"#B89C82", fontFamily:"'Noto Sans TC',sans-serif", textAlign:"center", maxWidth:280, lineHeight:1.7 }}>
-        每個帳號有獨立的打卡紀錄<br/>可與家人分別使用
+        {mode === "signup" && (
+          <input
+            placeholder="你的名字"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            style={inputStyle}
+          />
+        )}
+        <input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          placeholder="密碼（至少 6 個字元）"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{ ...inputStyle, marginBottom:16 }}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+        />
+
+        {error && <div style={{ color:"#C0392B", fontSize:13, fontFamily:"'Noto Sans TC',sans-serif", marginBottom:12, textAlign:"center" }}>{error}</div>}
+        {success && <div style={{ color:"#27AE60", fontSize:13, fontFamily:"'Noto Sans TC',sans-serif", marginBottom:12, textAlign:"center", lineHeight:1.6 }}>{success}</div>}
+
+        <button onClick={handleSubmit} disabled={loading} style={{
+          width:"100%", padding:"15px", borderRadius:14,
+          background:"linear-gradient(90deg,#8B5E3C,#C8956C)",
+          color:"#F5EFE6", border:"none", cursor:"pointer",
+          fontSize:16, fontWeight:700, fontFamily:"'Noto Sans TC',sans-serif",
+          boxShadow:"0 4px 18px #8B5E3C44", transition:"all 0.2s",
+          opacity: loading ? 0.7 : 1,
+        }}>
+          {loading ? "處理中…" : mode === "login" ? "登入" : "註冊帳號"}
+        </button>
+      </div>
+
+      <p style={{ marginTop:24, fontSize:12, color:"#B89C82", fontFamily:"'Noto Sans TC',sans-serif", textAlign:"center", maxWidth:280, lineHeight:1.7 }}>
+        每個帳號有獨立的打卡紀錄<br/>可與家人分別使用 😊
       </p>
     </div>
   );
@@ -85,51 +151,34 @@ export default function App() {
 
   const today = todayStr();
 
-  // Auth listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
+      setSession(session); setAuthLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setSession(session);
-      setAuthLoading(false);
+      setSession(session); setAuthLoading(false);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load logs from Supabase
   useEffect(() => {
     if (!session) return;
-    const uid = session.user.id;
-
     const fetchLogs = async () => {
       setDataLoading(true);
       const { data, error } = await supabase
-        .from("workout_logs")
-        .select("*")
-        .eq("user_id", uid)
+        .from("workout_logs").select("*")
+        .eq("user_id", session.user.id)
         .order("date", { ascending: true });
-
       if (!error && data) {
         const grouped = {};
         data.forEach(row => {
           if (!grouped[row.date]) grouped[row.date] = [];
-          grouped[row.date].push({
-            dbId: row.id,
-            id: row.workout_id,
-            label: row.label,
-            icon: row.icon,
-            color: row.color,
-            duration: row.duration,
-            ts: row.created_at,
-          });
+          grouped[row.date].push({ dbId:row.id, id:row.workout_id, label:row.label, icon:row.icon, color:row.color, duration:row.duration, ts:row.created_at });
         });
         setLogs(grouped);
       }
       setDataLoading(false);
     };
-
     fetchLogs();
   }, [session]);
 
@@ -137,51 +186,41 @@ export default function App() {
   const totalWorkouts = Object.values(logs).flat().length;
   const totalMinutes = Object.values(logs).flat().reduce((s,e) => s+(e.duration||0), 0);
   const activeDays = Object.keys(logs).length;
-  const streak = activeDays; // simplified; could compute consecutive days
 
   const handleCheckIn = async () => {
     if (!selectedWorkout || !session) return;
     const dur = customDuration ? parseInt(customDuration) : selectedDuration;
-
     const { data, error } = await supabase.from("workout_logs").insert({
-      user_id: session.user.id,
-      date: today,
-      workout_id: selectedWorkout.id,
-      label: selectedWorkout.label,
-      icon: selectedWorkout.icon,
-      color: selectedWorkout.color,
-      duration: dur,
+      user_id: session.user.id, date: today,
+      workout_id: selectedWorkout.id, label: selectedWorkout.label,
+      icon: selectedWorkout.icon, color: selectedWorkout.color, duration: dur,
     }).select().single();
-
     if (!error && data) {
-      const entry = { dbId: data.id, ...selectedWorkout, duration: dur, ts: data.created_at };
-      const newLogs = { ...logs, [today]: [...(logs[today] || []), entry] };
-      setLogs(newLogs);
-      setShowModal(false);
-      setSelectedWorkout(null);
-      setCustomDuration("");
-      setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 2500);
+      const entry = { dbId:data.id, ...selectedWorkout, duration:dur, ts:data.created_at };
+      setLogs({ ...logs, [today]: [...(logs[today]||[]), entry] });
+      setShowModal(false); setSelectedWorkout(null); setCustomDuration("");
+      setCelebrate(true); setTimeout(() => setCelebrate(false), 2500);
     }
   };
 
   const removeLog = async (dateStr, idx) => {
-    const entry = (logs[dateStr] || [])[idx];
+    const entry = (logs[dateStr]||[])[idx];
     if (!entry) return;
     await supabase.from("workout_logs").delete().eq("id", entry.dbId);
-    const newDay = (logs[dateStr] || []).filter((_,i) => i !== idx);
+    const newDay = (logs[dateStr]||[]).filter((_,i) => i!==idx);
     const newLogs = { ...logs, [dateStr]: newDay };
-    if (newDay.length === 0) delete newLogs[dateStr];
+    if (newDay.length===0) delete newLogs[dateStr];
     setLogs(newLogs);
   };
 
-  // Calendar
   const daysInMonth = getDaysInMonth(calYear, calMonth);
   const firstDay = getFirstDayOfMonth(calYear, calMonth);
   const calDays = [];
   for (let i=0;i<firstDay;i++) calDays.push(null);
   for (let d=1;d<=daysInMonth;d++) calDays.push(d);
   function calDateStr(d) { return `${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+
+  const userName = session?.user?.user_metadata?.full_name?.split(" ")[0] || session?.user?.email?.split("@")[0] || "你";
 
   if (authLoading) return (
     <div style={{ minHeight:"100vh", background:"#F5EFE6", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
@@ -190,7 +229,7 @@ export default function App() {
     </div>
   );
 
-  if (!session) return <LoginScreen />;
+  if (!session) return <AuthScreen />;
 
   if (dataLoading) return (
     <div style={{ minHeight:"100vh", background:"#F5EFE6", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
@@ -198,8 +237,6 @@ export default function App() {
       <div style={{ color:"#9C7E6A", fontSize:14, fontFamily:"sans-serif" }}>載入紀錄中…</div>
     </div>
   );
-
-  const userName = session.user.user_metadata?.full_name?.split(" ")[0] || "你";
 
   return (
     <div style={{ minHeight:"100vh", background:"#F5EFE6", fontFamily:"'Playfair Display','Noto Sans TC',Georgia,serif", color:"#3E2A1A", maxWidth:480, margin:"0 auto", position:"relative" }}>
@@ -213,10 +250,9 @@ export default function App() {
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
         .wo-btn:active { transform:scale(0.94) !important; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+        input::-webkit-inner-spin-button { -webkit-appearance:none; }
       `}</style>
 
-      {/* Celebration */}
       {celebrate && (
         <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:1000 }}>
           {[...Array(22)].map((_,i)=>(
@@ -230,7 +266,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div style={{ position:"fixed", inset:0, zIndex:500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
           <div style={{ position:"absolute", inset:0, background:"#3E2A1A55", backdropFilter:"blur(4px)" }} onClick={()=>setShowModal(false)}/>
@@ -238,7 +273,6 @@ export default function App() {
             <div style={{ width:40, height:4, background:"#D4C0A8", borderRadius:99, margin:"0 auto 24px" }}/>
             <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, marginBottom:6 }}>今天做了什麼？</div>
             <div style={{ fontSize:12, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:20 }}>{formatDateLabel(today)} · 選擇運動類型</div>
-
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:24 }}>
               {WORKOUTS.map(w=>(
                 <button key={w.id} className="wo-btn" onClick={()=>setSelectedWorkout(w)} style={{
@@ -255,7 +289,6 @@ export default function App() {
                 </button>
               ))}
             </div>
-
             <div style={{ fontSize:13, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:10, letterSpacing:1 }}>運動時間（分鐘）</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
               {DURATIONS.map(d=>(
@@ -274,7 +307,6 @@ export default function App() {
                 fontFamily:"'Noto Sans TC',sans-serif", outline:"none", textAlign:"center",
               }}/>
             </div>
-
             <button className="wo-btn" onClick={handleCheckIn} disabled={!selectedWorkout} style={{
               width:"100%", padding:"16px", borderRadius:18,
               background: selectedWorkout ? "linear-gradient(90deg,#8B5E3C,#C8956C)" : "#D4C0A8",
@@ -289,10 +321,8 @@ export default function App() {
         </div>
       )}
 
-      {/* BG deco */}
       <div style={{ position:"fixed", top:-80, right:-80, width:260, height:260, borderRadius:"50%", background:"radial-gradient(circle,#C8956C22,transparent 70%)", pointerEvents:"none" }}/>
 
-      {/* Header */}
       <div style={{ padding:"28px 20px 0" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
           <div style={{ fontSize:11, letterSpacing:4, color:"#9C7E6A", textTransform:"uppercase", fontFamily:"'Noto Sans TC',sans-serif" }}>你的教練 · 週訓計畫</div>
@@ -311,7 +341,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ display:"flex", margin:"18px 20px 0", background:"#EDE0D0", borderRadius:16, padding:4, border:"1px solid #D4C0A8" }}>
         {TABS.map((t,i)=>(
           <button key={i} onClick={()=>setTab(i)} style={{
@@ -326,8 +355,6 @@ export default function App() {
       </div>
 
       <div style={{ padding:"20px 20px 80px" }}>
-
-        {/* 今日打卡 */}
         {tab===0 && (
           <div style={{ animation:"fadeIn 0.3s ease" }}>
             <div style={{ display:"flex", gap:10, marginBottom:20 }}>
@@ -386,7 +413,6 @@ export default function App() {
           </div>
         )}
 
-        {/* 日曆紀錄 */}
         {tab===1 && (
           <div style={{ animation:"fadeIn 0.3s ease" }}>
             <div style={{ display:"flex", gap:10, marginBottom:20 }}>
@@ -409,11 +435,9 @@ export default function App() {
                 <div style={{ fontWeight:700, fontSize:17, fontFamily:"'Playfair Display',serif" }}>{calYear} · {MONTH_NAMES[calMonth]}</div>
                 <button onClick={()=>{let m=calMonth+1,y=calYear;if(m>11){m=0;y++;}setCalMonth(m);setCalYear(y);setSelectedDay(null);}} style={{ background:"#D4C0A8", border:"none", color:"#6B4F3A", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:16 }}>›</button>
               </div>
-
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", marginBottom:8 }}>
                 {WEEK_LABELS.map(l=>(<div key={l} style={{ textAlign:"center", fontSize:11, color:"#B89C82", fontFamily:"'Noto Sans TC',sans-serif", padding:"4px 0" }}>{l}</div>))}
               </div>
-
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
                 {calDays.map((d,i)=>{
                   if (!d) return <div key={i}/>;
