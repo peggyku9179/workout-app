@@ -4,7 +4,9 @@ import { supabase } from "./supabase";
 const WORKOUTS = [
   { id: "weight",    label: "重訓",   icon: "💪", color: "#8B5E3C" },
   { id: "class",     label: "團課",   icon: "🕺", color: "#6B4F3A" },
-  { id: "run",       label: "跑步",   icon: "🏃", color: "#7A5C44" },
+  { id: "run_out",   label: "室外跑", icon: "🏃", color: "#7A5C44" },
+  { id: "run_in",    label: "室內跑", icon: "🏟", color: "#6B5040" },
+  { id: "slow_run",  label: "超慢跑", icon: "🐢", color: "#9C7A55" },
   { id: "bike",      label: "公路車", icon: "🚴", color: "#A07850" },
   { id: "badminton", label: "羽球",   icon: "🏸", color: "#9C6B3C" },
   { id: "yoga",      label: "瑜珈",   icon: "🧘", color: "#B8845A" },
