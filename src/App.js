@@ -142,6 +142,8 @@ export default function App() {
   const [celebrate, setCelebrate] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [modalDate, setModalDate] = useState(null);
+  const openModal = (date) => { setModalDate(date); setShowModal(true); setSelectedWorkout(null); setCustomDuration(""); setSelectedDuration(45); };
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(45);
   const [customDuration, setCustomDuration] = useState("");
@@ -192,14 +194,16 @@ export default function App() {
   const handleCheckIn = async () => {
     if (!selectedWorkout || !session) return;
     const dur = customDuration ? parseInt(customDuration) : selectedDuration;
+    const targetDate = modalDate || today;
     const { data, error } = await supabase.from("workout_logs").insert({
-      user_id: session.user.id, date: today,
+      user_id: session.user.id, date: targetDate,
       workout_id: selectedWorkout.id, label: selectedWorkout.label,
       icon: selectedWorkout.icon, color: selectedWorkout.color, duration: dur,
     }).select().single();
     if (!error && data) {
       const entry = { dbId:data.id, ...selectedWorkout, duration:dur, ts:data.created_at };
-      setLogs({ ...logs, [today]: [...(logs[today]||[]), entry] });
+      const targetDate = modalDate || today;
+      setLogs({ ...logs, [targetDate]: [...(logs[targetDate]||[]), entry] });
       setShowModal(false); setSelectedWorkout(null); setCustomDuration("");
       setCelebrate(true); setTimeout(() => setCelebrate(false), 2500);
     }
@@ -273,8 +277,8 @@ export default function App() {
           <div style={{ position:"absolute", inset:0, background:"#3E2A1A55", backdropFilter:"blur(4px)" }} onClick={()=>setShowModal(false)}/>
           <div style={{ position:"relative", background:"#F5EFE6", borderRadius:"28px 28px 0 0", padding:"28px 24px 48px", animation:"slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)" }}>
             <div style={{ width:40, height:4, background:"#D4C0A8", borderRadius:99, margin:"0 auto 24px" }}/>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, marginBottom:6 }}>今天做了什麼？</div>
-            <div style={{ fontSize:12, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:20 }}>{formatDateLabel(today)} · 選擇運動類型</div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, marginBottom:6 }}>{modalDate === today ? "今天做了什麼？" : "補登運動紀錄 📝"}</div>
+            <div style={{ fontSize:12, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:20 }}>{formatDateLabel(modalDate || today)} · 選擇運動類型</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:24 }}>
               {WORKOUTS.map(w=>(
                 <button key={w.id} className="wo-btn" onClick={()=>setSelectedWorkout(w)} style={{
@@ -396,7 +400,7 @@ export default function App() {
               </div>
             )}
 
-            <button className="wo-btn" onClick={()=>setShowModal(true)} style={{
+            <button className="wo-btn" onClick={()=>openModal(today)} style={{
               width:"100%", padding:"18px", borderRadius:20,
               background:"linear-gradient(90deg,#8B5E3C,#C8956C)",
               color:"#F5EFE6", border:"none", cursor:"pointer",
@@ -466,9 +470,12 @@ export default function App() {
 
             {selectedDay&&(
               <div style={{ animation:"slideUp 0.25s ease" }}>
-                <div style={{ fontSize:13, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginBottom:10, letterSpacing:1 }}>{formatDateLabel(selectedDay)} 的運動紀錄</div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <div style={{ fontSize:13, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", letterSpacing:1 }}>{formatDateLabel(selectedDay)} 的運動紀錄</div>
+                  <button className="wo-btn" onClick={()=>openModal(selectedDay)} style={{ background:"linear-gradient(90deg,#8B5E3C,#C8956C)", border:"none", color:"#F5EFE6", borderRadius:12, padding:"8px 14px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Noto Sans TC',sans-serif", boxShadow:"0 2px 10px #8B5E3C33" }}>＋ 補登運動</button>
+                </div>
                 {(logs[selectedDay]||[]).length===0?(
-                  <div style={{ background:"#EDE0D0", borderRadius:16, padding:"20px", textAlign:"center", color:"#B89C82", fontFamily:"'Noto Sans TC',sans-serif", fontSize:13 }}>這天沒有運動紀錄</div>
+                  <div style={{ background:"#EDE0D0", borderRadius:16, padding:"20px", textAlign:"center", color:"#B89C82", fontFamily:"'Noto Sans TC',sans-serif", fontSize:13 }}>這天沒有運動紀錄，點上方補登！</div>
                 ):(
                   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                     {(logs[selectedDay]||[]).map((e,i)=>(
@@ -478,7 +485,7 @@ export default function App() {
                           <div style={{ fontWeight:600, fontSize:14, color:"#3E2A1A", fontFamily:"'Noto Sans TC',sans-serif" }}>{e.label}</div>
                           <div style={{ fontSize:12, color:"#9C7E6A", marginTop:2, fontFamily:"'Noto Sans TC',sans-serif" }}>⏱ {e.duration} 分鐘</div>
                         </div>
-                        {selectedDay===today&&(<button onClick={()=>removeLog(selectedDay,i)} style={{ background:"#D4C0A8", border:"none", color:"#8B5E3C", width:28, height:28, borderRadius:8, cursor:"pointer", fontSize:12 }}>✕</button>)}
+                        <button onClick={()=>removeLog(selectedDay,i)} style={{ background:"#D4C0A8", border:"none", color:"#8B5E3C", width:28, height:28, borderRadius:8, cursor:"pointer", fontSize:12 }}>✕</button>
                       </div>
                     ))}
                     <div style={{ textAlign:"right", fontSize:12, color:"#9C7E6A", fontFamily:"'Noto Sans TC',sans-serif", marginTop:4 }}>
